@@ -16,10 +16,14 @@
 
 %}
 
-digit   [0-9]
-letter [a-zA-Z]
-whitespace [ \t]
-newline [\n\r]
+digit       [0-9]
+numpart     {digit}(({digit}|_)*{digit})?
+expsign     [+-]
+exponent    [eE]{expsign}?{numpart}
+
+letter      [a-zA-Z_$]
+whitespace  [ \t]
+newline     [\n\r]
 
 %X BLOCK_COMMENT
 %X STRLIT
@@ -29,9 +33,9 @@ newline [\n\r]
 \"                                      { str_line = nline; str_col = ncol; ncol += yyleng; str_pos = 0; BEGIN(STRLIT); }
 <STRLIT>\"                              { ncol += yyleng; str_buffer[str_pos] = '\0'; printf("STRLIT(\"%s\")\n", str_buffer); BEGIN(INITIAL); }
 <STRLIT>\\[fnrt\\"']                    { ncol += yyleng; str_buffer[str_pos++] = yytext[0]; str_buffer[str_pos++] = yytext[1]; }
-<STRLIT>\\[^fnrt\\"'\n]                 { if(print_errors) printf("ERROR! Line %d, column %d: invalid escape sequence (%s)\n", nline, ncol, yytext); ncol += yyleng; BEGIN(INITIAL); }
-<STRLIT>[\n\r]                          { if(print_errors) printf("ERROR! Line %d, column %d: unterminated string literal\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); }
-<STRLIT><<EOF>>                         { printf("ERROR| Line %d column %d: unterminated with end of file\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); } 
+<STRLIT>\\[^fnrt\\"'\n]                 { if(print_errors) printf("Line %d, column %d: invalid escape sequence (%s)\n", nline, ncol, yytext); ncol += yyleng; BEGIN(INITIAL); }
+<STRLIT>[\n\r]                          { if(print_errors) printf("Line %d, column %d: unterminated string literal\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); }
+<STRLIT><<EOF>>                         { printf("Line %d column %d: unterminated with end of file\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); } 
 <STRLIT>.                               { ncol += yyleng; str_buffer[str_pos++] = yytext[0]; }
 
 
@@ -87,17 +91,18 @@ newline [\n\r]
 "void"                                  { if(print_tokens) printf("VOID\n"); ncol += yyleng; }
 "while"                                 { if(print_tokens) printf("WHILE\n"); ncol += yyleng; }
 
-"++"|"--"                               { if(print_tokens) printf("RESERVED\n"); ncol += yyleng; }
+"++"                                    { if(print_tokens) printf("RESERVED\n"); ncol += yyleng; }
+"--"                                    { if(print_tokens) printf("RESERVED\n"); ncol += yyleng; }
 "null"                                  { if(print_tokens) printf("RESERVED\n"); ncol += yyleng; }
 "Integer"|"System"                      { if(print_tokens) printf("RESERVED\n"); ncol += yyleng; }
 
 
 "0"|[1-9](({digit}|_)*{digit})?         { if(print_tokens) printf("NATURAL(%s)\n", yytext); ncol += yyleng; }
-{digit}*"."{digit}+                     { printf("DECIMAL(%s)\n", yytext); ncol += yyleng; }
-{letter}({digit}|{letter})*             { printf("IDENTIFIER(%s)\n", yytext); ncol += yyleng; }
+{numpart}"."{numpart}?{exponent}?|"."{numpart}{exponent}?|{numpart}{exponent}                  { if(print_tokens) printf("DECIMAL(%s)\n", yytext); ncol += yyleng; }
+{letter}({digit}|{letter})*             { if(print_tokens) printf("IDENTIFIER(%s)\n", yytext); ncol += yyleng; }
 {whitespace}                            { ; ncol += yyleng; }
 
-.                                       { printf("ERROR! Line %d, column %d: unrecognized character ( %s )\n", nline, ncol, yytext ); ncol += yyleng;}
+.                                       { printf("ERROR! Line %d, column %d: unrecognized character (%s)\n", nline, ncol, yytext ); ncol += yyleng;}
 
 %%
 
