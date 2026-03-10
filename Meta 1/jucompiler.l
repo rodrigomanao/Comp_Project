@@ -1,4 +1,8 @@
 %{
+    /*
+        David Pedrosa 2021275573
+        Rodrigo Manão 2023207589
+    */
     #include <stdio.h> 
     #include <string.h>
 
