@@ -18,6 +18,8 @@
     int print_tokens = 0; // flag para os prints dos tokens "-l"
     int print_errors = 1; // flag para os prints dos erros "-e1"
 
+    void append_to_buffer();
+
 %}
 
 digit       [0-9]
@@ -37,9 +39,9 @@ newline     [\n\r]
 \"                                      { str_line = nline; str_col = ncol; ncol += yyleng; str_pos = 0; BEGIN(STRLIT); }
 <STRLIT>\"                              { ncol += yyleng; str_buffer[str_pos] = '\0'; printf("STRLIT(\"%s\")\n", str_buffer); BEGIN(INITIAL); }
 <STRLIT>\\[fnrt\\"']                    { ncol += yyleng; str_buffer[str_pos++] = yytext[0]; str_buffer[str_pos++] = yytext[1]; }
-<STRLIT>\\[^fnrt\\"'\n]                 { if(print_errors) printf("Line %d, column %d: invalid escape sequence (%s)\n", nline, ncol, yytext); ncol += yyleng; BEGIN(INITIAL); }
-<STRLIT>[\n\r]                          { if(print_errors) printf("Line %d, column %d: unterminated string literal\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); }
-<STRLIT><<EOF>>                         { printf("Line %d column %d: unterminated with end of file\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); } 
+<STRLIT>\\[^fnrt\\"'\n]                 { if(print_errors) printf("Line %d, col %d: invalid escape sequence (%s)\n", nline, ncol, yytext); ncol += yyleng; BEGIN(INITIAL); }
+<STRLIT>[\n\r]                          { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); }
+<STRLIT><<EOF>>                         { printf("Line %d col %d: unterminated with end of file\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); } 
 <STRLIT>.                               { ncol += yyleng; str_buffer[str_pos++] = yytext[0]; }
 
 
@@ -95,8 +97,8 @@ newline     [\n\r]
 "void"                                  { if(print_tokens) printf("VOID\n"); ncol += yyleng; }
 "while"                                 { if(print_tokens) printf("WHILE\n"); ncol += yyleng; }
 
-"++"                                    { if(print_tokens) printf("RESERVED\n"); ncol += yyleng; }
-"--"                                    { if(print_tokens) printf("RESERVED\n"); ncol += yyleng; }
+"++"                                    { if(print_tokens) printf("RESERVED(%s)\n"); ncol += yyleng; }
+"--"                                    { if(print_tokens) printf("RESERVED(%s)\n"); ncol += yyleng; }
 "null"                                  { if(print_tokens) printf("RESERVED\n"); ncol += yyleng; }
 "Integer"|"System"                      { if(print_tokens) printf("RESERVED\n"); ncol += yyleng; }
 
@@ -106,7 +108,7 @@ newline     [\n\r]
 {letter}({digit}|{letter})*             { if(print_tokens) printf("IDENTIFIER(%s)\n", yytext); ncol += yyleng; }
 {whitespace}                            { ; ncol += yyleng; }
 
-.                                       { printf("ERROR! Line %d, column %d: unrecognized character (%s)\n", nline, ncol, yytext ); ncol += yyleng;}
+.                                       { printf("Line %d, col %d: unrecognized character (%s)\n", nline, ncol, yytext ); ncol += yyleng;}
 
 %%
 

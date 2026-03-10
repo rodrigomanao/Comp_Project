@@ -1,6 +1,0 @@
-## META 1
---------------------
-[ ] - Ver documentação do juc para as RESERVED
-[ ] - Função reallod par a memoria do buffer
-[ ] - Ver os casos de erro
-[ ] - Adicionar o script
