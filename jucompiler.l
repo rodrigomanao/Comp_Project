@@ -27,6 +27,7 @@ numpart     {digit}(({digit}|_)*{digit})?
 expsign     [+-]
 exponent    [eE]{expsign}?{numpart}
 
+reserved    "abstract"|"assert"|"boolean"|"break"|"byte"|"case"|"catch"|"char"|"class"|"const"|"continue"|"default"|"do"|"double"|"else"|"enum"|"extends"|"final"|"finally"|"float"|"for"|"if"|"goto"|"implements"|"import"|"instanceof"|"int"|"interface"|"long"|"native"|"new"|"package"|"private"|"protected"|"public"|"return"|"short"|"static"|"strictfp"|"super"|"switch"|"synchronized"|"this"|"throw"|"throws"|"transient"|"try"|"void"|"volatile"|"while"|"System"|"Integer"|"null"|"++"|"--"
 letter      [a-zA-Z_$]
 whitespace  [ \t]
 newline     [\n\r]
@@ -97,10 +98,10 @@ newline     [\n\r]
 "void"                                  { if(print_tokens) printf("VOID\n"); ncol += yyleng; }
 "while"                                 { if(print_tokens) printf("WHILE\n"); ncol += yyleng; }
 
-"++"                                    { if(print_tokens) printf("RESERVED(%s)\n"); ncol += yyleng; }
-"--"                                    { if(print_tokens) printf("RESERVED(%s)\n"); ncol += yyleng; }
-"null"                                  { if(print_tokens) printf("RESERVED\n"); ncol += yyleng; }
-"Integer"|"System"                      { if(print_tokens) printf("RESERVED\n"); ncol += yyleng; }
+{reserved}                              { if(print_tokens) printf("RESERVED(%s)\n", yytext); ncol += yyleng; }
+
+
+
 
 
 "0"|[1-9](({digit}|_)*{digit})?         { if(print_tokens) printf("NATURAL(%s)\n", yytext); ncol += yyleng; }
@@ -108,7 +109,7 @@ newline     [\n\r]
 {letter}({digit}|{letter})*             { if(print_tokens) printf("IDENTIFIER(%s)\n", yytext); ncol += yyleng; }
 {whitespace}                            { ; ncol += yyleng; }
 
-.                                       { printf("Line %d, col %d: unrecognized character (%s)\n", nline, ncol, yytext ); ncol += yyleng;}
+.                                       { printf("Line %d, col %d: illegal character (%s)\n", nline, ncol, yytext ); ncol += yyleng;}
 
 %%
 
