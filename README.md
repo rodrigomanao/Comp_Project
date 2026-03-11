@@ -1,9 +1,11 @@
 # META 1
 --------------------
 ## TODO
-[ ] - Ver documentação do juc para as RESERVED
-[ ] - Função reallod par a memoria do buffer
+[ ] - Função realloc para a memoria do buffer (almost done)
 [ ] - Ver os casos de erro
+[ ] - Adicionar coisas em falta (correr o script e ver)
+[ ] - Fazer um makefile para correr mais rapido
+[ ] - FAZER O LINE COMMENT SO // para contar como comentario e nao como divisao
 
 ## Como compilar
 

@@ -18,8 +18,18 @@
     int print_tokens = 0; // flag para os prints dos tokens "-l"
     int print_errors = 1; // flag para os prints dos erros "-e1"
 
-    void append_to_buffer();
-
+    /*
+    void append_to_buffer(const char *text) {
+        int len = strlen(text);
+        while (buffer_size + len >= buffer_capacity) {
+            if (buffer_capacity == 0) buffer_capacity = 16;
+            else buffer_capacity *= 2;
+            buffer = realloc(buffer, buffer_capacity);
+        }
+        strcpy(buffer + buffer_size, text);
+        buffer_size + len;
+    }
+    */
 %}
 
 digit       [0-9]
