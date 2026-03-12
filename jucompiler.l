@@ -42,8 +42,10 @@ letter      [a-zA-Z_$]
 whitespace  [ \t]
 newline     [\n\r]
 
-%X BLOCK_COMMENT
 %X STRLIT
+%X BLOCK_COMMENT
+%X SINGLE_COMMENT
+
 
 %%
 
@@ -60,6 +62,11 @@ newline     [\n\r]
 <BLOCK_COMMENT>"*/"                     { BEGIN(INITIAL); }
 <BLOCK_COMMENT>\n                       { ncol=1; nline++; }
 <BLOCK_COMMENT>.                        { ncol += yyleng; }
+
+"//"                                    { BEGIN(SINGLE_COMMENT); }
+<SINGLE_COMMENT>\n                      { BEGIN(INITIAL); ncol=1; nline++;}
+<SINGLE_COMMENT>.                       { ncol += yyleng; }
+
 
 
 {newline}                               { ; ncol = 1; nline++; }
