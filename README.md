@@ -7,14 +7,14 @@
 
 ## Testes
 B - Empty/blank files 2/5
-C - Operators, brackets and punctuation marks (10 points).
+✅ C - Operators, brackets and punctuation marks 10/10.
 ✅D - Identifiers and keywords 45/45
 ✅E - Comments 15/15 points
 ✅F - Numeric, boolean and string literals 45/45.
-G - Illegal characters (10 points).
+G - Illegal characters 0/10.
 ✅H - Unterminated comments 20/20
-I - Invalid or unterminated string literals (20 points)
-J - Miscellaneous  
+I - Invalid or unterminated string literals 
+J - Miscellaneous  (18/20)
 
 
 ## Como compilar
