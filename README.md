@@ -13,7 +13,7 @@ B - Empty/blank files 2/5
 ✅F - Numeric, boolean and string literals 45/45.
 G - Illegal characters 0/10.
 ✅H - Unterminated comments 20/20
-I - Invalid or unterminated string literals 
+I - Invalid or unterminated string literals (8/20)
 J - Miscellaneous  (18/20)
 
 
