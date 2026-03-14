@@ -24,6 +24,9 @@
     int print_tokens = 0; // flag para os prints dos tokens "-l"
     int print_errors = 1; // flag para os prints dos erros "-e1"
 
+    // Variavel que nos diz se imprimimos ou nao O STRLIT conforme tem erros de escape ou nao
+    int valid_string = 1; // Começa a true e caso encontremos um erro passamos para 0 (false)
+
     /*
     void append_to_buffer(const char *text) {
         int len = strlen(text);
@@ -55,12 +58,12 @@ newline     "\r\n"|"\n"|"\r"
 
 %%
 
-\"                                      { str_line = nline; str_col = ncol; ncol += yyleng; str_pos = 0; BEGIN(STRLIT); }
-<STRLIT>\"                              { ncol += yyleng; str_buffer[str_pos] = '\0'; printf("STRLIT(\"%s\")\n", str_buffer); BEGIN(INITIAL); }
-<STRLIT>\\[fnrt\\"']                    { ncol += yyleng; str_buffer[str_pos++] = yytext[0]; str_buffer[str_pos++] = yytext[1]; }
-<STRLIT>\\[^fnrt\\"'\n]                 { if(print_errors) printf("Line %d, col %d: invalid escape sequence (%s)\n", nline, ncol, yytext); ncol += yyleng; BEGIN(INITIAL); }
-<STRLIT>{newline}                       { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); }
-<STRLIT><<EOF>>                         { printf("Line %d, col %d: unterminated with end of file\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); } 
+\"                                      { str_line = nline; str_col = ncol; ncol += yyleng; str_pos = 0; valid_string = 1; BEGIN(STRLIT); }
+<STRLIT>\"                              { ncol += yyleng; str_buffer[str_pos] = '\0'; if(print_errors && valid_string) printf("STRLIT(\"%s\")\n", str_buffer); BEGIN(INITIAL); }
+<STRLIT>{newline}                      { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); valid_string = 0; ncol = 1; nline++; BEGIN(INITIAL); }
+<STRLIT><<EOF>>                      { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); BEGIN(INITIAL); }
+<STRLIT>\\[fnrt\\"]                     { ncol += yyleng; str_buffer[str_pos++] = yytext[0]; str_buffer[str_pos++] = yytext[1]; }
+<STRLIT>\\[^fnrt\\"]                    { if(print_errors) printf("Line %d, col %d: invalid escape sequence (%s)\n", nline, ncol, yytext); valid_string = ncol += yyleng;}
 <STRLIT>.                               { ncol += yyleng; str_buffer[str_pos++] = yytext[0]; }
 
 
