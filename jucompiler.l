@@ -11,7 +11,13 @@
     int nline = 1; // incrementador da linha
     int str_line, str_col; // para guardar a posição inicial da string
     char str_buffer[1024]; // buffer para acumular a string
-    int str_pos = 0; // posição do buffer
+    int str_pos = 0; // posição do bufferº
+
+    // A semelhança dos STRLITs é suposto contar apenas as colunas quando o comentário é completo
+    // Se o comentário não acabar o suposto é que ele de o inicio do comentario
+    // Como nos estamos sempre a incrementar 1 a 1 temos que fazer numa variavel auxiliar para caso de erro
+    int begin_col_block = 1; // Esta variavel é utilizada para incrementar as colunas nos blocos de comentarios
+    int begin_line_block = 1; // o mesmo mas para a linha
 
 
     // Valor default das flags caso nao tenha flags no input
@@ -40,7 +46,7 @@ exponent    [eE]{expsign}?{numpart}
 reserved    "abstract"|"assert"|"boolean"|"break"|"byte"|"case"|"catch"|"char"|"class"|"const"|"continue"|"default"|"do"|"double"|"else"|"enum"|"extends"|"final"|"finally"|"float"|"for"|"if"|"goto"|"implements"|"import"|"instanceof"|"int"|"interface"|"long"|"native"|"new"|"package"|"private"|"protected"|"public"|"return"|"short"|"static"|"strictfp"|"super"|"switch"|"synchronized"|"this"|"throw"|"throws"|"transient"|"try"|"void"|"volatile"|"while"|"System"|"Integer"|"null"|"++"|"--"
 letter      [a-zA-Z_$]
 whitespace  [ \t]
-newline     [\n\r]
+newline     "\r\n"|"\n"|"\r"
 
 %X STRLIT
 %X BLOCK_COMMENT
@@ -53,25 +59,27 @@ newline     [\n\r]
 <STRLIT>\"                              { ncol += yyleng; str_buffer[str_pos] = '\0'; printf("STRLIT(\"%s\")\n", str_buffer); BEGIN(INITIAL); }
 <STRLIT>\\[fnrt\\"']                    { ncol += yyleng; str_buffer[str_pos++] = yytext[0]; str_buffer[str_pos++] = yytext[1]; }
 <STRLIT>\\[^fnrt\\"'\n]                 { if(print_errors) printf("Line %d, col %d: invalid escape sequence (%s)\n", nline, ncol, yytext); ncol += yyleng; BEGIN(INITIAL); }
-<STRLIT>[\n\r]                          { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); }
-<STRLIT><<EOF>>                         { printf("Line %d col %d: unterminated with end of file\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); } 
+<STRLIT>{newline}                       { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); }
+<STRLIT><<EOF>>                         { printf("Line %d, col %d: unterminated with end of file\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); } 
 <STRLIT>.                               { ncol += yyleng; str_buffer[str_pos++] = yytext[0]; }
 
 
-"/*"                                    { BEGIN(BLOCK_COMMENT); }
-<BLOCK_COMMENT>"*/"                     { BEGIN(INITIAL); }
-<BLOCK_COMMENT>\n                       { ncol=1; nline++; }
-<BLOCK_COMMENT>.                        { ncol += yyleng; }
+"/*"                                    { begin_line_block = nline; begin_col_block = ncol; ncol +=yyleng; BEGIN(BLOCK_COMMENT);}
+<BLOCK_COMMENT>"*/"                     { ncol += yyleng; BEGIN(INITIAL); }
+<BLOCK_COMMENT>{newline}                { nline++; ncol = 1;}
+<BLOCK_COMMENT><<EOF>>                  { printf("Line %d, col %d: unterminated comment\n", begin_line_block, begin_col_block); ncol = 1; BEGIN(INITIAL); } 
+<BLOCK_COMMENT>.                        { ncol +=yyleng;  }
 
 "//"                                    { BEGIN(SINGLE_COMMENT); }
-<SINGLE_COMMENT>\n                      { BEGIN(INITIAL); ncol=1; nline++;}
-<SINGLE_COMMENT>.                       { ncol += yyleng; }
+<SINGLE_COMMENT>{newline}                { ncol=1; nline++; BEGIN(INITIAL); }
+<SINGLE_COMMENT><<EOF>>                 { BEGIN(INITIAL); }
+<SINGLE_COMMENT>.                       { ; }
 
 
 
 {newline}                               { ; ncol = 1; nline++; }
 
-"true" | "false"                        { if(print_tokens) printf("BOOLLIT\n"); ncol += yyleng; }
+"true"|"false"                        { if(print_tokens) printf("BOOLLIT(%s)\n", yytext  ); ncol += yyleng; }
 "&&"                                    { if(print_tokens) printf("AND\n"); ncol += yyleng; }
 "="                                     { if(print_tokens) printf("ASSIGN\n"); ncol += yyleng; }
 "*"                                     { if(print_tokens) printf("STAR\n"); ncol += yyleng; }
