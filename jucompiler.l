@@ -84,6 +84,7 @@ newline     "\r\n"|"\n"|"\r"
 
 "true"|"false"                        { if(print_tokens) printf("BOOLLIT(%s)\n", yytext  ); ncol += yyleng; }
 "&&"                                    { if(print_tokens) printf("AND\n"); ncol += yyleng; }
+"^"                                     { if(print_tokens) printf("XOR\n"); ncol += yyleng; }
 "="                                     { if(print_tokens) printf("ASSIGN\n"); ncol += yyleng; }
 "*"                                     { if(print_tokens) printf("STAR\n"); ncol += yyleng; }
 ","                                     { if(print_tokens) printf("COMMA\n"); ncol += yyleng; }
