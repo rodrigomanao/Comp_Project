@@ -6,15 +6,15 @@
 [ ] - Adicionar coisas em falta (correr o script e ver)
 
 ## Testes
-B - Empty/blank files 2/5
-✅ C - Operators, brackets and punctuation marks 10/10.
+✅B - Empty/blank files 5/5
+✅C - Operators, brackets and punctuation marks 10/10.
 ✅D - Identifiers and keywords 45/45
 ✅E - Comments 15/15 points
 ✅F - Numeric, boolean and string literals 45/45.
-G - Illegal characters 0/10.
+✅G - Illegal characters 10/10.
 ✅H - Unterminated comments 20/20
-I - Invalid or unterminated string literals (8/20)
-J - Miscellaneous  (18/20)
+I - Invalid or unterminated string literals (0/20)
+✅J - Miscellaneous  (20/20)
 
 
 ## Como compilar
