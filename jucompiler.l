@@ -24,6 +24,19 @@
     int buffer_size = 0;
     int buffer_capacity = 0;
 
+    // Para fazer a limpeza das mensagens de erro do tipo "\a(\n real)", que metiam o parenteses em baixo e
+    char *clean_str(char *s) {
+        static char buffer[256]; 
+        int j = 0;
+        for (int i = 0; s[i] != '\0' && j < 255; i++) {
+            if (s[i] != '\n' && s[i] != '\r') {
+                buffer[j++] = s[i];
+            }
+        }
+        buffer[j] = '\0';
+        return buffer;
+    }
+
     void append_to_buffer(const char *text) {
         int len = strlen(text);
         while (buffer_size + len + 1 > buffer_capacity) {
@@ -66,12 +79,15 @@ newline     "\r\n"|"\n"|"\r"
 \"                              { str_line = nline; str_col = ncol; ncol += yyleng; reset_buffer(); valid_string = 1; BEGIN(STRLIT); }
 <STRLIT>\"                      { ncol += yyleng; if(print_tokens && valid_string) printf("STRLIT(\"%s\")\n", buffer); BEGIN(INITIAL); }
 <STRLIT>\\[fnrt\\"]             { ncol += yyleng; append_to_buffer(yytext); }
-<STRLIT>\\{newline}             { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); valid_string = 0; ncol = 1; nline++; BEGIN(INITIAL); }
-<STRLIT>\\[^\r\n]               { if(print_errors) printf("Line %d, col %d: invalid escape sequence (%s)\n", nline, ncol, yytext); valid_string = 0; ncol += yyleng; }
+<STRLIT>\\{newline}             { if(print_errors){ 
+                                            printf("Line %d, col %d: invalid escape sequence (%s)\n", nline, ncol, clean_str(yytext)); valid_string = 0; ncol += yyleng; }
+                                            printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); }
+                                            
 <STRLIT>\\                      { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); valid_string = 0; BEGIN(INITIAL); }
 <STRLIT>{newline}               { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); valid_string = 0; ncol = 1; nline++; BEGIN(INITIAL); }
 <STRLIT><<EOF>>                 { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); BEGIN(INITIAL); }
 <STRLIT>.                       { ncol += yyleng; append_to_buffer(yytext); }
+<STRLIT>\\.                     { if(print_errors) printf("Line %d, col %d: invalid escape sequence (%s)\n", nline, ncol, clean_str(yytext)); valid_string = 0; ncol += yyleng; }
 
 
 "/*"                            { begin_line_block = nline; begin_col_block = ncol; ncol += yyleng; BEGIN(BLOCK_COMMENT); }

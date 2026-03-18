@@ -6,6 +6,7 @@
 [ ] - Adicionar coisas em falta (correr o script e ver)
 
 ## Testes
+META 1 - DONE ✅
 ✅B - Empty/blank files 5/5
 ✅C - Operators, brackets and punctuation marks 10/10.
 ✅D - Identifiers and keywords 45/45
@@ -22,6 +23,10 @@ I - Invalid or unterminated string literals (0/20)
 lex jucompiler
 cc lex.yy.c -o main
 ./test.sh -l meta1
+
+--
+
+./jucompiler -l < meta1/errorsAndOthers.java | diff -u --color meta1/errorsAndOthers.out -
 
 
 ## No terminal
