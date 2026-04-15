@@ -7,6 +7,8 @@
     #include <string.h>
     #include <stdlib.h>
 
+    #define PASS_TOKEN() yylval.lexeme = strdup(yytext);
+
     int ncol = 1;
     int nline = 1;
     int str_line, str_col;
@@ -104,7 +106,7 @@ newline     "\r\n"|"\n"|"\r"
 
 {newline}                       { ncol = 1; nline++; }
 
-"true"|"false"                  { if(print_tokens) printf("BOOLLIT(%s)\n", yytext); ncol += yyleng; }
+"true"|"false"                  { if(print_tokens) printf("BOOLLIT(%s)\n", yytext); ncol += yyleng; PASS_TOKEN(); }
 "&&"                            { if(print_tokens) printf("AND\n"); ncol += yyleng; }
 "^"                             { if(print_tokens) printf("XOR\n"); ncol += yyleng; }
 "="                             { if(print_tokens) printf("ASSIGN\n"); ncol += yyleng; }
