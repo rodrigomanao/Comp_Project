@@ -6,8 +6,13 @@
     #include <stdio.h>
     #include <string.h>
     #include <stdlib.h>
+    #include <y.tab.h>
 
     #define PASS_TOKEN() yylval.lexeme = strdup(yytext);
+    #define PASS_TOKEN_STR() yylval.lexeme = strdup(buffer);
+
+
+    int yyparse(void);
 
     int ncol = 1;
     int nline = 1;
@@ -79,7 +84,7 @@ newline     "\r\n"|"\n"|"\r"
 %%
 
 \"                              { str_line = nline; str_col = ncol; ncol += yyleng; reset_buffer(); valid_string = 1; BEGIN(STRLIT); }
-<STRLIT>\"                      { ncol += yyleng; if(print_tokens && valid_string) printf("STRLIT(\"%s\")\n", buffer); BEGIN(INITIAL); }
+<STRLIT>\"                      { ncol += yyleng; if(print_tokens && valid_string) printf("STRLIT(\"%s\")\n", buffer); BEGIN(INITIAL); PASS_TOKEN_STR(); return STRLIT; }
 <STRLIT>\\[fnrt\\"]             { ncol += yyleng; append_to_buffer(yytext); }
 <STRLIT>\\{newline}             { if(print_errors){ 
                                             printf("Line %d, col %d: invalid escape sequence (%s)\n", nline, ncol, clean_str(yytext)); valid_string = 0; ncol += yyleng; }
@@ -106,63 +111,61 @@ newline     "\r\n"|"\n"|"\r"
 
 {newline}                       { ncol = 1; nline++; }
 
-"true"|"false"                  { if(print_tokens) printf("BOOLLIT(%s)\n", yytext); ncol += yyleng; PASS_TOKEN(); }
-"&&"                            { if(print_tokens) printf("AND\n"); ncol += yyleng; }
-"^"                             { if(print_tokens) printf("XOR\n"); ncol += yyleng; }
-"="                             { if(print_tokens) printf("ASSIGN\n"); ncol += yyleng; }
-"*"                             { if(print_tokens) printf("STAR\n"); ncol += yyleng; }
-","                             { if(print_tokens) printf("COMMA\n"); ncol += yyleng; }
-"/"                             { if(print_tokens) printf("DIV\n"); ncol += yyleng; }
-"=="                            { if(print_tokens) printf("EQ\n"); ncol += yyleng; }
-">="                            { if(print_tokens) printf("GE\n"); ncol += yyleng; }
-">"                             { if(print_tokens) printf("GT\n"); ncol += yyleng; }
-"{"                             { if(print_tokens) printf("LBRACE\n"); ncol += yyleng; }
-"<="                            { if(print_tokens) printf("LE\n"); ncol += yyleng; }
-"("                             { if(print_tokens) printf("LPAR\n"); ncol += yyleng; }
-"["                             { if(print_tokens) printf("LSQ\n"); ncol += yyleng; }
-"<"                             { if(print_tokens) printf("LT\n"); ncol += yyleng; }
-"-"                             { if(print_tokens) printf("MINUS\n"); ncol += yyleng; }
-"%"                             { if(print_tokens) printf("MOD\n"); ncol += yyleng; }
-"!="                            { if(print_tokens) printf("NE\n"); ncol += yyleng; }
-"!"                             { if(print_tokens) printf("NOT\n"); ncol += yyleng; }
-"||"                            { if(print_tokens) printf("OR\n"); ncol += yyleng; }
-"+"                             { if(print_tokens) printf("PLUS\n"); ncol += yyleng; }
-"}"                             { if(print_tokens) printf("RBRACE\n"); ncol += yyleng; }
-")"                             { if(print_tokens) printf("RPAR\n"); ncol += yyleng; }
-"]"                             { if(print_tokens) printf("RSQ\n"); ncol += yyleng; }
-";"                             { if(print_tokens) printf("SEMICOLON\n"); ncol += yyleng; }
-"->"                            { if(print_tokens) printf("ARROW\n"); ncol += yyleng; }
-"<<"                            { if(print_tokens) printf("LSHIFT\n"); ncol += yyleng; }
-">>"                            { if(print_tokens) printf("RSHIFT\n"); ncol += yyleng; }
+"true"|"false"                  { if(print_tokens) printf("BOOLLIT(%s)\n", yytext); ncol += yyleng; PASS_TOKEN(); return BOOLLIT; }
+"&&"                            { if(print_tokens) printf("AND\n"); ncol += yyleng; return AND; }
+"^"                             { if(print_tokens) printf("XOR\n"); ncol += yyleng; return XOR; }
+"="                             { if(print_tokens) printf("ASSIGN\n"); ncol += yyleng; return ASSIGN; }
+"*"                             { if(print_tokens) printf("STAR\n"); ncol += yyleng; return STAR; }
+","                             { if(print_tokens) printf("COMMA\n"); ncol += yyleng; return COMMA; }
+"/"                             { if(print_tokens) printf("DIV\n"); ncol += yyleng; return DIV; }
+"=="                            { if(print_tokens) printf("EQ\n"); ncol += yyleng; return EQ; }
+">="                            { if(print_tokens) printf("GE\n"); ncol += yyleng; return GE; }
+">"                             { if(print_tokens) printf("GT\n"); ncol += yyleng; return GT; }
+"{"                             { if(print_tokens) printf("LBRACE\n"); ncol += yyleng; return LBRACE; }
+"<="                            { if(print_tokens) printf("LE\n"); ncol += yyleng; return LE; }
+"("                             { if(print_tokens) printf("LPAR\n"); ncol += yyleng; return LPAR; }
+"["                             { if(print_tokens) printf("LSQ\n"); ncol += yyleng; return LSQ; }
+"<"                             { if(print_tokens) printf("LT\n"); ncol += yyleng; return LT; }
+"-"                             { if(print_tokens) printf("MINUS\n"); ncol += yyleng; return MINUS; }
+"%"                             { if(print_tokens) printf("MOD\n"); ncol += yyleng; return MOD; }
+"!="                            { if(print_tokens) printf("NE\n"); ncol += yyleng; return NE; }
+"!"                             { if(print_tokens) printf("NOT\n"); ncol += yyleng; return NOT; }
+"||"                            { if(print_tokens) printf("OR\n"); ncol += yyleng; return OR; }
+"+"                             { if(print_tokens) printf("PLUS\n"); ncol += yyleng; return PLUS; }
+"}"                             { if(print_tokens) printf("RBRACE\n"); ncol += yyleng; return RBRACE; }
+")"                             { if(print_tokens) printf("RPAR\n"); ncol += yyleng; return RPAR; }
+"]"                             { if(print_tokens) printf("RSQ\n"); ncol += yyleng; return RSQ; }
+";"                             { if(print_tokens) printf("SEMICOLON\n"); ncol += yyleng; return SEMICOLON; }
+"->"                            { if(print_tokens) printf("ARROW\n"); ncol += yyleng; return ARROW; }
+"<<"                            { if(print_tokens) printf("LSHIFT\n"); ncol += yyleng; return LSHIFT; }
+">>"                            { if(print_tokens) printf("RSHIFT\n"); ncol += yyleng; return RSHIFT; }
 
-"boolean"                       { if(print_tokens) printf("BOOL\n"); ncol += yyleng; }
-"class"                         { if(print_tokens) printf("CLASS\n"); ncol += yyleng; }
-".length"                       { if(print_tokens) printf("DOTLENGTH\n"); ncol += yyleng; }
-"double"                        { if(print_tokens) printf("DOUBLE\n"); ncol += yyleng; }
-"else"                          { if(print_tokens) printf("ELSE\n"); ncol += yyleng; }
-"if"                            { if(print_tokens) printf("IF\n"); ncol += yyleng; }
-"int"                           { if(print_tokens) printf("INT\n"); ncol += yyleng; }
-"System.out.print"              { if(print_tokens) printf("PRINT\n"); ncol += yyleng; }
-"Integer.parseInt"              { if(print_tokens) printf("PARSEINT\n"); ncol += yyleng; }
-"public"                        { if(print_tokens) printf("PUBLIC\n"); ncol += yyleng; }
-"return"                        { if(print_tokens) printf("RETURN\n"); ncol += yyleng; }
-"static"                        { if(print_tokens) printf("STATIC\n"); ncol += yyleng; }
-"String"                        { if(print_tokens) printf("STRING\n"); ncol += yyleng; }
-"void"                          { if(print_tokens) printf("VOID\n"); ncol += yyleng; }
-"while"                         { if(print_tokens) printf("WHILE\n"); ncol += yyleng; }
+"boolean"                       { if(print_tokens) printf("BOOL\n"); ncol += yyleng; return BOOL; }
+"class"                         { if(print_tokens) printf("CLASS\n"); ncol += yyleng; return CLASS; }
+".length"                       { if(print_tokens) printf("DOTLENGTH\n"); ncol += yyleng; return DOTLENGTH; }
+"double"                        { if(print_tokens) printf("DOUBLE\n"); ncol += yyleng; return DOUBLE; }
+"else"                          { if(print_tokens) printf("ELSE\n"); ncol += yyleng; return ELSE; }
+"if"                            { if(print_tokens) printf("IF\n"); ncol += yyleng;return IF; }
+"int"                           { if(print_tokens) printf("INT\n"); ncol += yyleng; return INT; }
+"System.out.print"              { if(print_tokens) printf("PRINT\n"); ncol += yyleng; return PRINT; }
+"Integer.parseInt"              { if(print_tokens) printf("PARSEINT\n"); ncol += yyleng; return PARSEINT; }
+"public"                        { if(print_tokens) printf("PUBLIC\n"); ncol += yyleng; return PUBLIC; }
+"return"                        { if(print_tokens) printf("RETURN\n"); ncol += yyleng; return RETURN; }
+"static"                        { if(print_tokens) printf("STATIC\n"); ncol += yyleng; return STATIC; }
+"String"                        { if(print_tokens) printf("STRING\n"); ncol += yyleng; return STRING; }
+"void"                          { if(print_tokens) printf("VOID\n"); ncol += yyleng; return VOID; }
+"while"                         { if(print_tokens) printf("WHILE\n"); ncol += yyleng; return WHILE; }
 
-{reserved}                      { if(print_tokens) printf("RESERVED(%s)\n", yytext); ncol += yyleng; }
+{reserved}                      { if(print_tokens) printf("RESERVED(%s)\n", yytext); ncol += yyleng; return RESERVED; }
 
-"0"|[1-9](({digit}|_)*{digit})?                                            { if(print_tokens) printf("NATURAL(%s)\n", yytext); ncol += yyleng; }
-{numpart}"."{numpart}?{exponent}?|"."{numpart}{exponent}?|{numpart}{exponent}  { if(print_tokens) printf("DECIMAL(%s)\n", yytext); ncol += yyleng; }
-{letter}({digit}|{letter})*     { if(print_tokens) printf("IDENTIFIER(%s)\n", yytext); ncol += yyleng; }
+"0"|[1-9](({digit}|_)*{digit})?                                                { if(print_tokens) printf("NATURAL(%s)\n", yytext); ncol += yyleng; PASS_TOKEN(); return NATURAL; }
+{numpart}"."{numpart}?{exponent}?|"."{numpart}{exponent}?|{numpart}{exponent}  { if(print_tokens) printf("DECIMAL(%s)\n", yytext); ncol += yyleng; PASS_TOKEN(); return DECIMAL; }
+{letter}({digit}|{letter})*     { if(print_tokens) printf("IDENTIFIER(%s)\n", yytext); ncol += yyleng; PASS_TOKEN(); return IDENTIFIER; }
 {whitespace}                    { ncol += yyleng; }
 
 .                               { printf("Line %d, col %d: illegal character (%s)\n", nline, ncol, yytext); ncol += yyleng; }
 
 %%
-
-extern int yylex();
 
 int main(int argc, char **argv) {
     if (argc > 1) {
@@ -178,7 +181,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    yylex();
+    yyparse();
     free(buffer);
     return 0;
 }
