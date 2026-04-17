@@ -1,24 +1,19 @@
 #ifndef _AST_H
 #define _AST_H
 
-enum category { 
-    Program, MethodDecl, FieldDecl, MethodHeader, FormalParams, MethodBody, VarDecl,
-    Identifier, Natural, Decimal, Boollit, Strlit, 
-    Bool, Int, Double, Void, 
-    Add, Sub, Mul, Div, Mod, 
-    And, Or, Xor, Lshift, Rshift, 
-    Eq, Ge, Gt, Le, Lt, Ne, 
-    Minus, Plus, Not, 
-    ParseArgs, MethodInvocation, Assignment, Length, 
-    If, While, Return, Print, Block, Statement, Parseint, Class
+enum category {
+    Program, FieldDecl, VarDecl, MethodDecl, MethodHeader, MethodParams, ParamDecl, MethodBody,
+    Block, If, While, Return, Call, Print, ParseArgs, Assign,
+    Or, And, Eq, Sub, Mul, Div, Mod, Ne, Lshift, Lt, Gt, Rshift, Le, Xor, Not, Ge, Add, Minus, Plus, Length,
+    Bool, BoolLit, Double, Decimal, Identifier, Int, Natural, StrLit, StringArray, Void
 };
 
 /* category names used by show; keep order in sync with enum above */
-// FALTAM CENAS JA MUDO
-#define names { \ 
-    "Program", "Function", "Parameters", "Parameter", "Arguments", \
-    "Integer", "Double", "Identifier", "Natural", "Decimal", \
-    "Call", "If", "Add", "Sub", "Mul", "Div" \
+#define names { \
+    "Program", "FieldDecl", "VarDecl", "MethodDecl", "MethodHeader", "MethodParams", "ParamDecl", "MethodBody", \
+    "Block", "If", "While", "Return", "Call", "Print", "ParseArgs", "Assign", \
+    "Or", "And", "Eq", "Sub", "Mul", "Div", "Mod", "Ne", "Lshift", "Lt", "Gt", "Rshift", "Le", "Xor", "Not", "Ge", "Add", "Minus", "Plus", "Length", \
+    "Bool", "BoolLit", "Double", "Decimal", "Identifier", "Int", "Natural", "StrLit", "StringArray", "Void" \
 }
 
 struct node {

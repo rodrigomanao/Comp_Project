@@ -6,13 +6,15 @@
     #include <stdio.h>
     #include <string.h>
     #include <stdlib.h>
-    #include <y.tab.h>
+    
+    #include "y.tab.h"
 
     #define PASS_TOKEN() yylval.lexeme = strdup(yytext);
     #define PASS_TOKEN_STR() yylval.lexeme = strdup(buffer);
 
 
     int yyparse(void);
+    void yyerror (char *s);
 
     int ncol = 1;
     int nline = 1;
@@ -168,24 +170,38 @@ newline     "\r\n"|"\n"|"\r"
 %%
 
 int main(int argc, char **argv) {
+    int print_tree = 0; // Flag para a AST (futuro)
+    
     if (argc > 1) {
         if (strcmp(argv[1], "-l") == 0) {
-            print_tokens = 1;
+            print_tokens = 1; 
             print_errors = 1;
         } else if (strcmp(argv[1], "-e1") == 0) {
-            print_tokens = 0;
+            print_tokens = 0; 
             print_errors = 1;
+        } else if (strcmp(argv[1], "-e2") == 0) {
+            print_tokens = 0; 
+            print_errors = 1;
+        } else if (strcmp(argv[1], "-t") == 0) {
+            print_tokens = 0; 
+            print_errors = 1; 
+            print_tree = 1;
         } else {
-            fprintf(stderr, "Unknown option: %s\n", argv[1]);
-            return 1;
+            print_tokens = 0; 
+            print_errors = 1;
         }
     }
 
     yyparse();
+    
     free(buffer);
     return 0;
 }
 
 int yywrap() {
     return 1;
+}
+
+void yyerror (char *s) {
+    printf("Line %d, col %d: %s: %s\n", nline, (int)(ncol - strlen(yytext)), s, yytext);
 }

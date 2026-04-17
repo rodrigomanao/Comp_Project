@@ -80,10 +80,6 @@ struct node *ast;
 %left STAR DIV MOD
 %right NOT UMINUS   
 
-if a
-    if b
-else
-
 
 /* START grammar rules section -- BNF grammar */
 
@@ -172,7 +168,7 @@ idList
 /* Regra 10-15: Statements*/
 statement
     : LBRACE statementList RBRACE
-    | IF LPAR expr RPAR statement
+    | IF LPAR expr RPAR statement %prec IFX
     | IF LPAR expr RPAR statement ELSE statement
     | WHILE LPAR expr RPAR statement
     | RETURN SEMICOLON
