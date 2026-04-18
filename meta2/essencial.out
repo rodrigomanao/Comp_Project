@@ -1,8 +1,8 @@
 Program
-..Id(Teste)
+..Identifier(Teste)
 ..MethodDecl
 ....MethodHeader
 ......Void
-......Id(main)
+......Identifier(main)
 ......MethodParams
 ....MethodBody

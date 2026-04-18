@@ -8,6 +8,9 @@
     #include <stdlib.h>
     
     #include "y.tab.h"
+    #include "ast.h"  
+    
+    extern struct node *ast;
 
     #define PASS_TOKEN() yylval.lexeme = strdup(yytext);
     #define PASS_TOKEN_STR() yylval.lexeme = strdup(buffer);
@@ -21,12 +24,22 @@
     int str_line, str_col;
     int str_pos = 0;
 
+    /*
+     * For STRLIT, flex's yytext at the parser error point is often just the
+     * closing quote (") which makes yyerror() print the wrong token.
+     * Keep the full literal (including quotes) and its start position.
+     */
+    char *last_strlit = NULL;
+    int last_strlit_line = 1;
+    int last_strlit_col = 1;
+
     int begin_col_block = 1;
     int begin_line_block = 1;
 
     int print_tokens = 0;
     int print_errors = 1;
     int valid_string = 1;
+    int syntax_errors = 0;
 
     // Buffer dinâmico para acumular a string
     char *buffer = NULL;
@@ -79,30 +92,28 @@ letter      [a-zA-Z_$]
 whitespace  [ \t\f]
 newline     "\r\n"|"\n"|"\r"
 
-%X STRLIT
+%X STR
 %X BLOCK_COMMENT
 %X SINGLE_COMMENT
 
 %%
 
-\"                              { str_line = nline; str_col = ncol; ncol += yyleng; reset_buffer(); valid_string = 1; BEGIN(STRLIT); }
-<STRLIT>\"                      { ncol += yyleng; if(print_tokens && valid_string) printf("STRLIT(\"%s\")\n", buffer); BEGIN(INITIAL); PASS_TOKEN_STR(); return STRLIT; }
-<STRLIT>\\[fnrt\\"]             { ncol += yyleng; append_to_buffer(yytext); }
-<STRLIT>\\{newline}             { if(print_errors){ 
-                                            printf("Line %d, col %d: invalid escape sequence (%s)\n", nline, ncol, clean_str(yytext)); valid_string = 0; ncol += yyleng; }
-                                            printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); }
+\"                              { str_line = nline; str_col = ncol; ncol += yyleng; reset_buffer(); append_to_buffer("\"");  valid_string = 1; BEGIN(STR); }
+<STR>\"                      { ncol += yyleng; append_to_buffer("\""); if (print_tokens && valid_string) printf("STRLIT(%s)\n", buffer); BEGIN(INITIAL); if (valid_string) { free(last_strlit); last_strlit = strdup(buffer); last_strlit_line = str_line; last_strlit_col = str_col; PASS_TOKEN_STR(); return STRLIT; } }
+<STR>\\[fnrt\\"]             { ncol += yyleng; append_to_buffer(yytext); }
+<STR>\\{newline}             { if(print_errors){  printf("Line %d, col %d: invalid escape sequence (%s)\n", nline, ncol, clean_str(yytext)); valid_string = 0; ncol += yyleng; } printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); ncol = 1; nline++; BEGIN(INITIAL); }
                                             
-<STRLIT>\\                      { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); valid_string = 0; BEGIN(INITIAL); }
-<STRLIT>{newline}               { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); valid_string = 0; ncol = 1; nline++; BEGIN(INITIAL); }
-<STRLIT><<EOF>>                 { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); BEGIN(INITIAL); }
-<STRLIT>.                       { ncol += yyleng; append_to_buffer(yytext); }
-<STRLIT>\\.                     { if(print_errors) printf("Line %d, col %d: invalid escape sequence (%s)\n", nline, ncol, clean_str(yytext)); valid_string = 0; ncol += yyleng; }
+<STR>\\                      { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); valid_string = 0; BEGIN(INITIAL); }
+<STR>{newline}               { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); valid_string = 0; ncol = 1; nline++; BEGIN(INITIAL); }
+<STR><<EOF>>                 { if(print_errors) printf("Line %d, col %d: unterminated string literal\n", str_line, str_col); BEGIN(INITIAL); }
+<STR>.                       { ncol += yyleng; append_to_buffer(yytext); }
+<STR>\\.                     { if(print_errors) printf("Line %d, col %d: invalid escape sequence (%s)\n", nline, ncol, clean_str(yytext)); valid_string = 0; ncol += yyleng; }
 
 
 "/*"                            { begin_line_block = nline; begin_col_block = ncol; ncol += yyleng; BEGIN(BLOCK_COMMENT); }
 <BLOCK_COMMENT>"*/"             { ncol += yyleng; BEGIN(INITIAL); }
 <BLOCK_COMMENT>{newline}        { nline++; ncol = 1; }
-<BLOCK_COMMENT><<EOF>>          { printf("Line %d, col %d: unterminated comment\n", begin_line_block, begin_col_block); ncol = 1; BEGIN(INITIAL); }
+<BLOCK_COMMENT><<EOF>>          { printf("Line %d, col %d: unterminated comment\n", begin_line_block, begin_col_block); BEGIN(INITIAL); }
 <BLOCK_COMMENT>.                { ncol += yyleng; }
 
 "//"                            { BEGIN(SINGLE_COMMENT); }
@@ -169,32 +180,32 @@ newline     "\r\n"|"\n"|"\r"
 
 %%
 
+
 int main(int argc, char **argv) {
-    int print_tree = 0; // Flag para a AST (futuro)
+    int print_tree = 0;
     
     if (argc > 1) {
         if (strcmp(argv[1], "-l") == 0) {
-            print_tokens = 1; 
-            print_errors = 1;
+            print_tokens = 1; print_errors = 1;
         } else if (strcmp(argv[1], "-e1") == 0) {
-            print_tokens = 0; 
-            print_errors = 1;
+            print_tokens = 0; print_errors = 1;
         } else if (strcmp(argv[1], "-e2") == 0) {
-            print_tokens = 0; 
-            print_errors = 1;
+            print_tokens = 0; print_errors = 1;
         } else if (strcmp(argv[1], "-t") == 0) {
-            print_tokens = 0; 
-            print_errors = 1; 
-            print_tree = 1;
+            print_tokens = 0; print_errors = 1; print_tree = 1;
         } else {
-            print_tokens = 0; 
-            print_errors = 1;
+            print_tokens = 0; print_errors = 1;
         }
     }
 
     yyparse();
     
+    if (print_tree && syntax_errors == 0) {
+        show(ast, 0);
+    }
+    
     free(buffer);
+    free(last_strlit);
     return 0;
 }
 
@@ -203,5 +214,14 @@ int yywrap() {
 }
 
 void yyerror (char *s) {
+    syntax_errors++;
+    /*
+     * For STRLIT, yytext here is typically just the closing quote (").
+     * Prefer the full literal captured in the scanner.
+     */
+    if (yytext != NULL && strcmp(yytext, "\"") == 0 && last_strlit != NULL) {
+        printf("Line %d, col %d: %s: %s\n", last_strlit_line, last_strlit_col, s, last_strlit);
+        return;
+    }
     printf("Line %d, col %d: %s: %s\n", nline, (int)(ncol - strlen(yytext)), s, yytext);
 }

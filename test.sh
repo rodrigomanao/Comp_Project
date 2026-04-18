@@ -39,14 +39,14 @@ for file in "$DIR"/*.java; do
     fi
 
     # Corre o programa e guarda a diferença
-    diff_result=$(./jucompiler "$FLAG" < "$file" | diff -u --color "$expected" -)
+    diff_result=$(./jucompiler "$FLAG" < "$file" | diff -u --color=always "$expected" -)
 
     if [ $? -eq 0 ]; then
         echo "✅ PASSED: $file"
         ((PASSED++))
     else
         echo "❌ FAILED: $file"
-        echo "$diff_result"
+        printf '%s\n' "$diff_result"
         echo "---------------------------------------------------"
         ((FAILED++))
     fi
