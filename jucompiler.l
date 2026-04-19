@@ -25,9 +25,7 @@
     int str_pos = 0;
 
     /*
-     * For STRLIT, flex's yytext at the parser error point is often just the
-     * closing quote (") which makes yyerror() print the wrong token.
-     * Keep the full literal (including quotes) and its start position.
+    Para o erro da string e ""
      */
     char *last_strlit = NULL;
     int last_strlit_line = 1;
@@ -215,10 +213,7 @@ int yywrap() {
 
 void yyerror (char *s) {
     syntax_errors++;
-    /*
-     * For STRLIT, yytext here is typically just the closing quote (").
-     * Prefer the full literal captured in the scanner.
-     */
+
     if (yytext != NULL && strcmp(yytext, "\"") == 0 && last_strlit != NULL) {
         printf("Line %d, col %d: %s: %s\n", last_strlit_line, last_strlit_col, s, last_strlit);
         return;

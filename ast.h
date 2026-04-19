@@ -8,7 +8,7 @@ enum category {
     Bool, BoolLit, Double, Decimal, Identifier, Int, Natural, StrLit, StringArray, Void
 };
 
-/* category names used by show; keep order in sync with enum above */
+/* categoria de nomes usadas pela func show, tem a mesma ordem do enum de cima*/
 #define names { \
     "Program", "FieldDecl", "VarDecl", "MethodDecl", "MethodHeader", "MethodParams", "ParamDecl", "MethodBody", \
     "Block", "If", "While", "Return", "Call", "Print", "ParseArgs", "Assign", \

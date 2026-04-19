@@ -2,10 +2,10 @@
 #include <stdio.h>
 #include "ast.h"
 
-// category names #defined in ast.h
+// categorias de nomes definindas na ast.h
 char *category_name[] = names;
 
-// create a node of a given category with a given lexical symbol
+//  cria um no dada uma dada categoria de simbolo lexical 
 struct node *newnode(enum category category, char *token) {
     struct node *new = malloc(sizeof(struct node));
     new->category = category;
@@ -16,7 +16,7 @@ struct node *newnode(enum category category, char *token) {
     return new;
 }
 
-// append a node to the list of children of the parent node
+// adiciona um no a lista de filhos de um no pai
 void addchild(struct node *parent, struct node *child) {
     struct node_list *new = malloc(sizeof(struct node_list));
     new->node = child;
@@ -27,7 +27,7 @@ void addchild(struct node *parent, struct node *child) {
     children->next = new;
 }
 
-// traverse the AST and print its content
+// percorre a AST e imprime o conteudo 
 void show(struct node *node, int depth) {
     int i;
     for(i = 0; i < depth; i++)
