@@ -1,0 +1,156 @@
+Line 7, col 11: Operator = cannot be applied to types int, none
+Line 15, col 11: Operator = cannot be applied to types int, none
+Line 16, col 11: Operator = cannot be applied to types double, none
+Line 17, col 11: Operator = cannot be applied to types int, none
+Line 18, col 11: Operator = cannot be applied to types int, none
+Line 20, col 11: Operator = cannot be applied to types double, none
+Line 21, col 11: Operator = cannot be applied to types int, none
+Line 22, col 11: Operator = cannot be applied to types double, none
+Line 23, col 11: Operator = cannot be applied to types int, none
+Line 24, col 11: Operator = cannot be applied to types double, none
+Line 25, col 11: Operator = cannot be applied to types int, none
+Line 27, col 11: Operator = cannot be applied to types boolean, none
+Line 28, col 11: Operator = cannot be applied to types int, none
+Line 29, col 11: Operator = cannot be applied to types boolean, none
+Line 30, col 11: Operator = cannot be applied to types int, none
+Line 31, col 11: Operator = cannot be applied to types boolean, none
+Line 32, col 11: Operator = cannot be applied to types int, none
+===== Class shift_errors Symbol Table =====
+valid	(String[])	void
+main	(String[])	void
+
+===== Method valid(String[]) Symbol Table =====
+return		void
+args		String[]	param
+x		int
+b		int
+
+===== Method main(String[]) Symbol Table =====
+return		void
+args		String[]	param
+i		int
+d		double
+b		boolean
+
+Program
+..Identifier(shift_errors)
+..MethodDecl
+....MethodHeader
+......Void
+......Identifier(valid)
+......MethodParams
+........ParamDecl
+..........StringArray
+..........Identifier(args)
+....MethodBody
+......VarDecl
+........Int
+........Identifier(x)
+......VarDecl
+........Int
+........Identifier(b)
+......Assign - int
+........Identifier(x) - int
+........Lshift
+..........Natural(1)
+..........Mul
+............Identifier(x)
+............Natural(1)
+..MethodDecl
+....MethodHeader
+......Void
+......Identifier(main)
+......MethodParams
+........ParamDecl
+..........StringArray
+..........Identifier(args)
+....MethodBody
+......VarDecl
+........Int
+........Identifier(i)
+......VarDecl
+........Double
+........Identifier(d)
+......VarDecl
+........Bool
+........Identifier(b)
+......Assign - int
+........Identifier(i) - int
+........Lshift
+..........Identifier(i)
+..........Natural(1)
+......Assign - double
+........Identifier(d) - double
+........Lshift
+..........Identifier(i)
+..........Natural(1)
+......Assign - int
+........Identifier(i) - int
+........Lshift
+..........Identifier(i)
+..........Decimal(1.1)
+......Assign - int
+........Identifier(i) - int
+........Lshift
+..........Identifier(i)
+..........BoolLit(true)
+......Assign - double
+........Identifier(d) - double
+........Lshift
+..........Identifier(d)
+..........Natural(1)
+......Assign - int
+........Identifier(i) - int
+........Lshift
+..........Identifier(d)
+..........Natural(1)
+......Assign - double
+........Identifier(d) - double
+........Lshift
+..........Identifier(d)
+..........Decimal(1.1)
+......Assign - int
+........Identifier(i) - int
+........Lshift
+..........Identifier(d)
+..........Decimal(1.1)
+......Assign - double
+........Identifier(d) - double
+........Lshift
+..........Identifier(d)
+..........BoolLit(true)
+......Assign - int
+........Identifier(i) - int
+........Lshift
+..........Identifier(d)
+..........BoolLit(true)
+......Assign - boolean
+........Identifier(b) - boolean
+........Lshift
+..........Identifier(b)
+..........Natural(1)
+......Assign - int
+........Identifier(i) - int
+........Lshift
+..........Identifier(b)
+..........Natural(1)
+......Assign - boolean
+........Identifier(b) - boolean
+........Lshift
+..........Identifier(b)
+..........Decimal(1.1)
+......Assign - int
+........Identifier(i) - int
+........Lshift
+..........Identifier(b)
+..........Decimal(1.1)
+......Assign - boolean
+........Identifier(b) - boolean
+........Lshift
+..........Identifier(b)
+..........BoolLit(true)
+......Assign - int
+........Identifier(i) - int
+........Lshift
+..........Identifier(b)
+..........BoolLit(true)
