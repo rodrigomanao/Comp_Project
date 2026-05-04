@@ -3,6 +3,7 @@ COMPILER = jucompiler
 LEX_FILE = jucompiler.l
 YACC_FILE = jucompiler.y
 AST_FILE = ast.c
+SEMANTICS_FILE = semantics.c
 CC = cc
 BISON ?= /opt/homebrew/opt/bison/bin/bison
 
@@ -11,10 +12,10 @@ BISON ?= /opt/homebrew/opt/bison/bin/bison
 # Build: yacc + lex + compile
 all: $(COMPILER)
 
-$(COMPILER): $(LEX_FILE) $(YACC_FILE) $(AST_FILE)
+$(COMPILER): $(LEX_FILE) $(YACC_FILE) $(AST_FILE) $(SEMANTICS_FILE)
 	$(BISON) -d -v -y -o y.tab.c $(YACC_FILE)
 	lex $(LEX_FILE)
-	$(CC) y.tab.c lex.yy.c $(AST_FILE) -o $(COMPILER)
+	$(CC) y.tab.c lex.yy.c $(AST_FILE) $(SEMANTICS_FILE) -o $(COMPILER)
 
 # Limpa todos os ficheiros gerados
 clean:

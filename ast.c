@@ -10,6 +10,7 @@ struct node *newnode(enum category category, char *token) {
     struct node *new = malloc(sizeof(struct node));
     new->category = category;
     new->token = token;
+    new->anot_string = NULL;
     new->children = malloc(sizeof(struct node_list));
     new->children->node = NULL;
     new->children->next = NULL;
@@ -29,13 +30,21 @@ void addchild(struct node *parent, struct node *child) {
 
 // percorre a AST e imprime o conteudo 
 void show(struct node *node, int depth) {
+    if (node == NULL) return;
     int i;
-    for(i = 0; i < depth; i++)
-        printf("..");
+    for(i = 0; i < depth; i++) printf("..");
+
     if(node->token == NULL)
-        printf("%s\n", category_name[node->category]);
+        printf("%s", category_name[node->category]);
     else
-        printf("%s(%s)\n", category_name[node->category], node->token);
+        printf("%s(%s)", category_name[node->category], node->token);
+
+    // O truque é imprimir a anotação ANTES do \n
+    if (node->anot_string != NULL) {
+        printf(" - %s", node->anot_string);
+    }
+    printf("\n"); // O \n fica sempre no fim
+
     struct node_list *child = node->children;
     while((child = child->next) != NULL)
         show(child->node, depth+1);

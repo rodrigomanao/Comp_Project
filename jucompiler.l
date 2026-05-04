@@ -9,11 +9,12 @@
     
     #include "y.tab.h"
     #include "ast.h"  
+    #include "semantics.h"
     
     extern struct node *ast;
 
-    #define PASS_TOKEN() yylval.lexeme = strdup(yytext);
-    #define PASS_TOKEN_STR() yylval.lexeme = strdup(buffer);
+    #define PASS_TOKEN() do { yylval.token_info.lexeme = strdup(yytext); yylval.token_info.line = nline; yylval.token_info.col = ncol - yyleng; } while(0)
+    #define PASS_TOKEN_STR() do { yylval.token_info.lexeme = strdup(buffer); yylval.token_info.line = last_strlit_line;  yylval.token_info.col = last_strlit_col; } while(0)
 
 
     int yyparse(void);
@@ -38,6 +39,8 @@
     int print_errors = 1;
     int valid_string = 1;
     int syntax_errors = 0;
+    int run_semantics = 0;
+    int print_semantics = 0;
 
     // Buffer dinâmico para acumular a string
     char *buffer = NULL;
@@ -123,49 +126,49 @@ newline     "\r\n"|"\n"|"\r"
 {newline}                       { ncol = 1; nline++; }
 
 "true"|"false"                  { if(print_tokens) printf("BOOLLIT(%s)\n", yytext); ncol += yyleng; PASS_TOKEN(); return BOOLLIT; }
-"&&"                            { if(print_tokens) printf("AND\n"); ncol += yyleng; return AND; }
-"^"                             { if(print_tokens) printf("XOR\n"); ncol += yyleng; return XOR; }
-"="                             { if(print_tokens) printf("ASSIGN\n"); ncol += yyleng; return ASSIGN; }
-"*"                             { if(print_tokens) printf("STAR\n"); ncol += yyleng; return STAR; }
+"&&"                            { if(print_tokens) printf("AND\n"); ncol += yyleng; PASS_TOKEN(); return AND; }
+"^"                             { if(print_tokens) printf("XOR\n"); ncol += yyleng; PASS_TOKEN(); return XOR; }
+"="                             { if(print_tokens) printf("ASSIGN\n"); ncol += yyleng; PASS_TOKEN(); return ASSIGN; }
+"*"                             { if(print_tokens) printf("STAR\n"); ncol += yyleng; PASS_TOKEN(); return STAR; }
 ","                             { if(print_tokens) printf("COMMA\n"); ncol += yyleng; return COMMA; }
-"/"                             { if(print_tokens) printf("DIV\n"); ncol += yyleng; return DIV; }
-"=="                            { if(print_tokens) printf("EQ\n"); ncol += yyleng; return EQ; }
-">="                            { if(print_tokens) printf("GE\n"); ncol += yyleng; return GE; }
-">"                             { if(print_tokens) printf("GT\n"); ncol += yyleng; return GT; }
+"/"                             { if(print_tokens) printf("DIV\n"); ncol += yyleng; PASS_TOKEN(); return DIV; }
+"=="                            { if(print_tokens) printf("EQ\n"); ncol += yyleng; PASS_TOKEN(); return EQ; }
+">="                            { if(print_tokens) printf("GE\n"); ncol += yyleng; PASS_TOKEN(); return GE; }
+">"                             { if(print_tokens) printf("GT\n"); ncol += yyleng; PASS_TOKEN(); return GT; }
 "{"                             { if(print_tokens) printf("LBRACE\n"); ncol += yyleng; return LBRACE; }
-"<="                            { if(print_tokens) printf("LE\n"); ncol += yyleng; return LE; }
+"<="                            { if(print_tokens) printf("LE\n"); ncol += yyleng; PASS_TOKEN(); return LE; }
 "("                             { if(print_tokens) printf("LPAR\n"); ncol += yyleng; return LPAR; }
 "["                             { if(print_tokens) printf("LSQ\n"); ncol += yyleng; return LSQ; }
-"<"                             { if(print_tokens) printf("LT\n"); ncol += yyleng; return LT; }
-"-"                             { if(print_tokens) printf("MINUS\n"); ncol += yyleng; return MINUS; }
-"%"                             { if(print_tokens) printf("MOD\n"); ncol += yyleng; return MOD; }
-"!="                            { if(print_tokens) printf("NE\n"); ncol += yyleng; return NE; }
-"!"                             { if(print_tokens) printf("NOT\n"); ncol += yyleng; return NOT; }
-"||"                            { if(print_tokens) printf("OR\n"); ncol += yyleng; return OR; }
-"+"                             { if(print_tokens) printf("PLUS\n"); ncol += yyleng; return PLUS; }
+"<"                             { if(print_tokens) printf("LT\n"); ncol += yyleng; PASS_TOKEN(); return LT; }
+"-"                             { if(print_tokens) printf("MINUS\n"); ncol += yyleng; PASS_TOKEN(); return MINUS; }
+"%"                             { if(print_tokens) printf("MOD\n"); ncol += yyleng; PASS_TOKEN(); return MOD; }
+"!="                            { if(print_tokens) printf("NE\n"); ncol += yyleng; PASS_TOKEN(); return NE; }
+"!"                             { if(print_tokens) printf("NOT\n"); ncol += yyleng; PASS_TOKEN(); return NOT; }
+"||"                            { if(print_tokens) printf("OR\n"); ncol += yyleng; PASS_TOKEN(); return OR; }
+"+"                             { if(print_tokens) printf("PLUS\n"); ncol += yyleng; PASS_TOKEN(); return PLUS; }
 "}"                             { if(print_tokens) printf("RBRACE\n"); ncol += yyleng; return RBRACE; }
 ")"                             { if(print_tokens) printf("RPAR\n"); ncol += yyleng; return RPAR; }
 "]"                             { if(print_tokens) printf("RSQ\n"); ncol += yyleng; return RSQ; }
 ";"                             { if(print_tokens) printf("SEMICOLON\n"); ncol += yyleng; return SEMICOLON; }
 "->"                            { if(print_tokens) printf("ARROW\n"); ncol += yyleng; return ARROW; }
-"<<"                            { if(print_tokens) printf("LSHIFT\n"); ncol += yyleng; return LSHIFT; }
-">>"                            { if(print_tokens) printf("RSHIFT\n"); ncol += yyleng; return RSHIFT; }
+"<<"                            { if(print_tokens) printf("LSHIFT\n"); ncol += yyleng; PASS_TOKEN(); return LSHIFT; }
+">>"                            { if(print_tokens) printf("RSHIFT\n"); ncol += yyleng; PASS_TOKEN(); return RSHIFT; }
 
 "boolean"                       { if(print_tokens) printf("BOOL\n"); ncol += yyleng; return BOOL; }
 "class"                         { if(print_tokens) printf("CLASS\n"); ncol += yyleng; return CLASS; }
-".length"                       { if(print_tokens) printf("DOTLENGTH\n"); ncol += yyleng; return DOTLENGTH; }
+".length"                       { if(print_tokens) printf("DOTLENGTH\n"); ncol += yyleng; PASS_TOKEN(); return DOTLENGTH; }
 "double"                        { if(print_tokens) printf("DOUBLE\n"); ncol += yyleng; return DOUBLE; }
 "else"                          { if(print_tokens) printf("ELSE\n"); ncol += yyleng; return ELSE; }
-"if"                            { if(print_tokens) printf("IF\n"); ncol += yyleng;return IF; }
+"if"                            { if(print_tokens) printf("IF\n"); ncol += yyleng; PASS_TOKEN(); return IF; }
 "int"                           { if(print_tokens) printf("INT\n"); ncol += yyleng; return INT; }
-"System.out.print"              { if(print_tokens) printf("PRINT\n"); ncol += yyleng; return PRINT; }
-"Integer.parseInt"              { if(print_tokens) printf("PARSEINT\n"); ncol += yyleng; return PARSEINT; }
-"public"                        { if(print_tokens) printf("PUBLIC\n"); ncol += yyleng; return PUBLIC; }
-"return"                        { if(print_tokens) printf("RETURN\n"); ncol += yyleng; return RETURN; }
+"System.out.print"              { if(print_tokens) printf("PRINT\n"); ncol += yyleng; PASS_TOKEN(); return PRINT; }
+"Integer.parseInt"              { if(print_tokens) printf("PARSEINT\n"); ncol += yyleng; PASS_TOKEN(); return PARSEINT; }
+"public"                        { if(print_tokens) printf("PUBLIC\n"); ncol += yyleng; PASS_TOKEN(); return PUBLIC; }
+"return"                        { if(print_tokens) printf("RETURN\n"); ncol += yyleng; PASS_TOKEN(); return RETURN; }
 "static"                        { if(print_tokens) printf("STATIC\n"); ncol += yyleng; return STATIC; }
 "String"                        { if(print_tokens) printf("STRING\n"); ncol += yyleng; return STRING; }
 "void"                          { if(print_tokens) printf("VOID\n"); ncol += yyleng; return VOID; }
-"while"                         { if(print_tokens) printf("WHILE\n"); ncol += yyleng; return WHILE; }
+"while"                         { if(print_tokens) printf("WHILE\n"); ncol += yyleng; PASS_TOKEN(); return WHILE; }
 
 {reserved}                      { if(print_tokens) printf("RESERVED(%s)\n", yytext); ncol += yyleng; return RESERVED; }
 
@@ -177,7 +180,6 @@ newline     "\r\n"|"\n"|"\r"
 .                               { printf("Line %d, col %d: illegal character (%s)\n", nline, ncol, yytext); ncol += yyleng; }
 
 %%
-
 
 int main(int argc, char **argv) {
     int print_tree = 0;
@@ -191,6 +193,12 @@ int main(int argc, char **argv) {
             print_tokens = 0; print_errors = 1;
         } else if (strcmp(argv[1], "-t") == 0) {
             print_tokens = 0; print_errors = 1; print_tree = 1;
+        } else if (strcmp(argv[1], "-s") == 0) {
+            print_tokens = 0; print_errors = 1; print_tree = 1; 
+            run_semantics = 1; print_semantics = 1;
+        } else if (strcmp(argv[1], "-e3") == 0) {
+            print_tokens = 0; print_errors = 1; print_tree = 0; 
+            run_semantics = 1; print_semantics = 0;
         } else {
             print_tokens = 0; print_errors = 1;
         }
@@ -198,8 +206,17 @@ int main(int argc, char **argv) {
 
     yyparse();
     
-    if (print_tree && syntax_errors == 0) {
-        show(ast, 0);
+    if (syntax_errors == 0) {
+        if (run_semantics) {
+            check_program(ast); 
+            if (print_semantics) {
+                print_symbol_tables();
+                show(ast, 0); 
+            }
+        } 
+        else if (print_tree) {
+            show(ast, 0);
+        }
     }
     
     free(buffer);
