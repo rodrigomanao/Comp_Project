@@ -33,4 +33,8 @@ extern int semantic_errors;
 void check_program(struct node *program);
 void print_symbol_tables();
 
+struct node *get_child(struct node *parent, int index);
+struct symbol_table *search_table(char *name);
+struct symbol_list *search_symbol(struct symbol_table *table, char *identifier);
+
 #endif

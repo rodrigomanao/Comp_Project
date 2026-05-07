@@ -10,6 +10,7 @@
     #include "y.tab.h"
     #include "ast.h"  
     #include "semantics.h"
+    #include "codegen.h"
     
     extern struct node *ast;
 
@@ -181,9 +182,11 @@ newline     "\r\n"|"\n"|"\r"
 
 %%
 
+
 int main(int argc, char **argv) {
     int print_tree = 0;
-    
+    int run_codegen = 0; //flag para correr ou nao o codgen 
+
     if (argc > 1) {
         if (strcmp(argv[1], "-l") == 0) {
             print_tokens = 1; print_errors = 1;
@@ -203,6 +206,11 @@ int main(int argc, char **argv) {
             print_tokens = 0; print_errors = 1;
         }
     }
+    else {
+        print_tokens = 0; print_errors = 1; print_tree = 0;
+        run_semantics = 1; print_semantics = 0;
+        run_codegen = 1; 
+    }
 
     yyparse();
     
@@ -212,6 +220,10 @@ int main(int argc, char **argv) {
             if (print_semantics) {
                 print_symbol_tables();
                 show(ast, 0); 
+            }
+
+            if(run_codegen && semantic_errors == 0){
+                codegen_program(ast);
             }
         } 
         else if (print_tree) {
