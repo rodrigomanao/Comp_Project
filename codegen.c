@@ -89,8 +89,64 @@ const char* get_llvm_type(char *anot_string) {
     if (anot_string == NULL) return "i32";
     if (strcmp(anot_string, "double") == 0) return "double";
     if (strcmp(anot_string, "boolean") == 0) return "i1";
+    if (strcmp(anot_string, "String[]") == 0) return "i8**";
     if (strcmp(anot_string, "void") == 0) return "void";
     return "i32"; 
+}
+
+const char* type_to_mangle(const char *type_name) {
+    if (strcmp(type_name, "int") == 0) return "int";
+    if (strcmp(type_name, "double") == 0) return "double";
+    if (strcmp(type_name, "boolean") == 0) return "boolean";
+    if (strcmp(type_name, "String[]") == 0) return "StringArray";
+    return "undef";
+}
+
+void build_mangled_name_from_sig(const char *base, const char *sig, char *out, size_t out_size) {
+    if (!sig || strlen(sig) <= 2) {
+        snprintf(out, out_size, "_%s_void", base);
+        return;
+    }
+
+    char sig_copy[1024];
+    strncpy(sig_copy, sig, sizeof(sig_copy) - 1);
+    sig_copy[sizeof(sig_copy) - 1] = '\0';
+
+    sig_copy[strlen(sig_copy) - 1] = '\0';
+    char *types_str = sig_copy + 1;
+
+    snprintf(out, out_size, "_%s", base);
+    char *token = strtok(types_str, ",");
+    while (token != NULL) {
+        const char *m = type_to_mangle(token);
+        strncat(out, "_", out_size - strlen(out) - 1);
+        strncat(out, m, out_size - strlen(out) - 1);
+        token = strtok(NULL, ",");
+    }
+}
+
+void build_mangled_name_from_params(const char *base, struct node *params, char *out, size_t out_size) {
+    if (!params || !params->children || !params->children->next) {
+        snprintf(out, out_size, "_%s_void", base);
+        return;
+    }
+
+    snprintf(out, out_size, "_%s", base);
+    struct node_list *curr = params->children->next;
+    while (curr) {
+        struct node *type_node = get_child(curr->node, 0);
+        const char *type_name = "undef";
+        if (type_node) {
+            if (type_node->category == Int) type_name = "int";
+            else if (type_node->category == Double) type_name = "double";
+            else if (type_node->category == Bool) type_name = "boolean";
+            else if (type_node->category == StringArray) type_name = "String[]";
+        }
+        const char *m = type_to_mangle(type_name);
+        strncat(out, "_", out_size - strlen(out) - 1);
+        strncat(out, m, out_size - strlen(out) - 1);
+        curr = curr->next;
+    }
 }
 
 int codegen_expression_and_cast(struct node *expr, const char *target_type) {
@@ -166,11 +222,11 @@ int codegen_cmp(struct node *cmp) {
     struct node *c2 = get_child(cmp, 1);
     const char *t1_type = get_llvm_type(c1->anot_string);
     const char *t2_type = get_llvm_type(c2->anot_string);
-    
-    // Se um deles for double, a comparação TEM de ser feita em double
-    // Por causa daquele teste dos DoubleAndInt 2 ou 3 ja nao sei qual era
-    const char *target_type = (strcmp(t1_type, "double") == 0 || strcmp(t2_type, "double") == 0) ? "double" : "i32";
-    
+
+    const char *target_type = "i32";
+    if (strcmp(t1_type, "i1") == 0 && strcmp(t2_type, "i1") == 0) target_type = "i1";
+    else if (strcmp(t1_type, "double") == 0 || strcmp(t2_type, "double") == 0) target_type = "double";
+
     int t1 = codegen_expression_and_cast(c1, target_type);
     int t2 = codegen_expression_and_cast(c2, target_type);
 
@@ -190,7 +246,11 @@ int codegen_cmp(struct node *cmp) {
             case Gt: op = "sgt"; break; case Ge: op = "sge"; break;
             default: break;
         }
-        printf("  %%%d = icmp %s i32 %%%d, %%%d\n", temporary, op, t1, t2);
+        if (strcmp(target_type, "i1") == 0) {
+            printf("  %%%d = icmp %s i1 %%%d, %%%d\n", temporary, op, t1, t2);
+        } else {
+            printf("  %%%d = icmp %s i32 %%%d, %%%d\n", temporary, op, t1, t2);
+        }
     }
     return temporary++;
 }
@@ -199,6 +259,8 @@ int codegen_cmp(struct node *cmp) {
 int codegen_call(struct node *call) {
     struct node *id_node = get_child(call, 0);
     const char *ret_type = get_llvm_type(call->anot_string);
+    char mangled[1024];
+    build_mangled_name_from_sig(id_node->token, id_node->anot_string, mangled, sizeof(mangled));
     
     // Ler a assinatura real do método guardada pela Meta 3 no anot_string do Identifier
     char sig[1024] = "";
@@ -215,6 +277,7 @@ int codegen_call(struct node *call) {
         while(token != NULL && param_c < 20) {
             if(strcmp(token, "double") == 0) target_args_types[param_c] = "double";
             else if(strcmp(token, "boolean") == 0) target_args_types[param_c] = "i1";
+            else if(strcmp(token, "String[]") == 0) target_args_types[param_c] = "i8**";
             param_c++;
             token = strtok(NULL, ",");
         }
@@ -231,8 +294,8 @@ int codegen_call(struct node *call) {
         arg_count++; current = current->next;
     }
     
-    if (strcmp(ret_type, "void") == 0) printf("  call void @_%s(", id_node->token);
-    else printf("  %%%d = call %s @_%s(", temporary, ret_type, id_node->token);
+    if (strcmp(ret_type, "void") == 0) printf("  call void @%s(", mangled);
+    else printf("  %%%d = call %s @%s(", temporary, ret_type, mangled);
     
     for (int i = 0; i < arg_count; i++) {
         if (i > 0) printf(", ");
@@ -244,10 +307,50 @@ int codegen_call(struct node *call) {
 }
 
 int codegen_parseargs(struct node *parseargs) {
-    struct node *id_node = get_child(parseargs, 0); 
-    char *prefix = is_local_variable(id_node->token) ? "%" : "@";
-    printf("  %%%d = load i32, i32* %s%s\n", temporary, prefix, id_node->token);
-    return temporary++;
+    struct node *id_node = get_child(parseargs, 0);
+    struct node *idx_node = get_child(parseargs, 1);
+
+    int base_ptr = -1;
+    if (id_node && id_node->token && strcmp(id_node->token, "args") == 0) {
+        base_ptr = temporary++;
+        printf("  %%%d = load i8**, i8*** @.args_data\n", base_ptr);
+    } else {
+        base_ptr = codegen_identifier(id_node);
+    }
+
+    int idx_temp = codegen_expression_and_cast(idx_node, "i32");
+
+    int res_ptr = temporary++;
+    printf("  %%%d = alloca i32\n", res_ptr);
+    printf("  store i32 0, i32* %%%d\n", res_ptr);
+
+    int len_temp = temporary++;
+    printf("  %%%d = load i32, i32* @.args_length\n", len_temp);
+    int ge_zero = temporary++;
+    printf("  %%%d = icmp sge i32 %%%d, 0\n", ge_zero, idx_temp);
+    int lt_len = temporary++;
+    printf("  %%%d = icmp slt i32 %%%d, %%%d\n", lt_len, idx_temp, len_temp);
+    int in_bounds = temporary++;
+    printf("  %%%d = and i1 %%%d, %%%d\n", in_bounds, ge_zero, lt_len);
+
+    int l_has = label++;
+    int l_end = label++;
+    printf("  br i1 %%%d, label %%L%d, label %%L%d\n", in_bounds, l_has, l_end);
+
+    printf("L%d:\n", l_has);
+    int gep_temp = temporary++;
+    printf("  %%%d = getelementptr inbounds i8*, i8** %%%d, i32 %%%d\n", gep_temp, base_ptr, idx_temp);
+    int str_temp = temporary++;
+    printf("  %%%d = load i8*, i8** %%%d\n", str_temp, gep_temp);
+    int atoi_temp = temporary++;
+    printf("  %%%d = call i32 @atoi(i8* %%%d)\n", atoi_temp, str_temp);
+    printf("  store i32 %%%d, i32* %%%d\n", atoi_temp, res_ptr);
+    printf("  br label %%L%d\n", l_end);
+
+    printf("L%d:\n", l_end);
+    int out_temp = temporary++;
+    printf("  %%%d = load i32, i32* %%%d\n", out_temp, res_ptr);
+    return out_temp;
 }
 
 int codegen_length(struct node *length_node) {
@@ -261,7 +364,7 @@ int codegen_minus(struct node *minus_node) {
     const char *type = get_llvm_type(minus_node->anot_string);
     int tmp = codegen_expression_and_cast(child, type);
     
-    if (strcmp(type, "double") == 0) printf("  %%%d = fsub double 0.0, %%%d\n", temporary, tmp);
+    if (strcmp(type, "double") == 0) printf("  %%%d = fsub double -0.0, %%%d\n", temporary, tmp);
     else printf("  %%%d = sub i32 0, %%%d\n", temporary, tmp);
     return temporary++;
 }
@@ -339,6 +442,13 @@ int codegen_expression(struct node *expression) {
         case Not:        return codegen_not(expression);
         case And:        return codegen_and(expression);
         case Or:         return codegen_or(expression);
+        case Xor: {
+            const char *t = get_llvm_type(expression->anot_string);
+            int t1 = codegen_expression_and_cast(get_child(expression, 0), t);
+            int t2 = codegen_expression_and_cast(get_child(expression, 1), t);
+            printf("  %%%d = xor %s %%%d, %%%d\n", temporary, t, t1, t2);
+            return temporary++;
+        }
         default:         break;
     }
     return -1;
@@ -448,13 +558,15 @@ void codegen_function(struct node *method_decl) {
 
     struct node *type_node = get_child(header, 0);
     struct node *id_node = get_child(header, 1);
+    char mangled[1024];
+    build_mangled_name_from_params(id_node->token, params, mangled, sizeof(mangled));
     
     const char *ret_llvm_type = "i32";
     if (type_node->category == Double) ret_llvm_type = "double";
     else if (type_node->category == Bool) ret_llvm_type = "i1";
     else if (type_node->category == Void) ret_llvm_type = "void";
     
-    printf("define %s @_%s(", ret_llvm_type, id_node->token);
+    printf("define %s @%s(", ret_llvm_type, mangled);
     if (params && params->children) {
         struct node_list *curr = params->children->next; int first = 1;
         while(curr) {
@@ -462,6 +574,7 @@ void codegen_function(struct node *method_decl) {
             const char *p_type = "i32";
             if (get_child(curr->node, 0)->category == Double) p_type = "double";
             else if (get_child(curr->node, 0)->category == Bool) p_type = "i1";
+            else if (get_child(curr->node, 0)->category == StringArray) p_type = "i8**";
             
             printf("%s %%%s_arg", p_type, get_child(curr->node, 1)->token); 
             first = 0; curr = curr->next;
@@ -475,6 +588,7 @@ void codegen_function(struct node *method_decl) {
             const char *p_type = "i32";
             if (get_child(curr->node, 0)->category == Double) p_type = "double";
             else if (get_child(curr->node, 0)->category == Bool) p_type = "i1";
+            else if (get_child(curr->node, 0)->category == StringArray) p_type = "i8**";
 
             char *p_name = get_child(curr->node, 1)->token;
             printf("  %%%s = alloca %s\n", p_name, p_type);
@@ -512,7 +626,8 @@ void codegen_program(struct node *program) {
     printf("@.str.false = private unnamed_addr constant [6 x i8] c\"false\\00\"\n");
     printf("@.str.string = private unnamed_addr constant [3 x i8] c\"%%s\\00\"\n\n");
 
-    printf("@.args_length = global i32 0\n\n");
+    printf("@.args_length = global i32 0\n");
+    printf("@.args_data = global i8** null\n\n");
 
     num_str_lits = 0; 
     find_strings(program); 
@@ -544,33 +659,56 @@ void codegen_program(struct node *program) {
 
     struct symbol_list *entry = search_symbol(global_table, "main");
     if(entry != NULL && entry->param_types != NULL) {
+        struct symbol_list *main_sym = NULL;
+        struct symbol_list *curr = global_table->symbols;
+        while (curr) {
+            if (strcmp(curr->identifier, "main") == 0 && curr->param_types != NULL) {
+                if (strcmp(curr->param_types, "(String[])") == 0) { main_sym = curr; break; }
+                if (main_sym == NULL) main_sym = curr;
+            }
+            curr = curr->next;
+        }
+        if (main_sym == NULL) return;
+        entry = main_sym;
+
         printf("define i32 @main(i32 %%argc, i8** %%argv) {\n");
         printf("  %%argc_len = sub i32 %%argc, 1\n");
         printf("  store i32 %%argc_len, i32* @.args_length\n");
+        printf("  %%argv_start = getelementptr inbounds i8*, i8** %%argv, i32 1\n");
+        printf("  store i8** %%argv_start, i8*** @.args_data\n");
         
-        printf("  %%1 = icmp sgt i32 %%argc, 1\n");
-        printf("  br i1 %%1, label %%has_args, label %%no_args\n");
-        printf("has_args:\n");
-        printf("  %%2 = getelementptr inbounds i8*, i8** %%argv, i32 1\n");
-        printf("  %%3 = load i8*, i8** %%2\n");
-        printf("  %%4 = call i32 @atoi(i8* %%3)\n");
-        printf("  br label %%call_main\n");
-        printf("no_args:\n");
-        printf("  br label %%call_main\n");
-        printf("call_main:\n");
-        printf("  %%5 = phi i32 [ %%4, %%has_args ], [ 0, %%no_args ]\n");
-        
-        const char *ret_type = "i32";
-        if (entry->type == type_double) ret_type = "double";
-        else if (entry->type == type_boolean) ret_type = "i1";
-        else if (entry->type == type_void) ret_type = "void";
+        char main_mangled[1024];
+        build_mangled_name_from_sig("main", entry->param_types, main_mangled, sizeof(main_mangled));
 
-        if (strcmp(ret_type, "void") == 0) {
-            printf("  call void @_main(i32 %%5)\n  ret i32 0\n}\n");
-        } else if (strcmp(ret_type, "double") == 0) {
-            printf("  %%6 = call double @_main(i32 %%5)\n  %%7 = fptosi double %%6 to i32\n  ret i32 %%7\n}\n");
+        if (strcmp(entry->param_types, "(String[])") == 0) {
+            printf("  call void @%s(i8** %%argv_start)\n  ret i32 0\n}\n", main_mangled);
+        } else if (strcmp(entry->param_types, "()") == 0) {
+            printf("  call void @%s()\n  ret i32 0\n}\n", main_mangled);
         } else {
-            printf("  %%6 = call %s @_main(i32 %%5)\n  ret i32 %%6\n}\n", ret_type);
+            printf("  %%1 = icmp sgt i32 %%argc, 1\n");
+            printf("  br i1 %%1, label %%has_args, label %%no_args\n");
+            printf("has_args:\n");
+            printf("  %%2 = getelementptr inbounds i8*, i8** %%argv, i32 1\n");
+            printf("  %%3 = load i8*, i8** %%2\n");
+            printf("  %%4 = call i32 @atoi(i8* %%3)\n");
+            printf("  br label %%call_main\n");
+            printf("no_args:\n");
+            printf("  br label %%call_main\n");
+            printf("call_main:\n");
+            printf("  %%5 = phi i32 [ %%4, %%has_args ], [ 0, %%no_args ]\n");
+            
+            const char *ret_type = "i32";
+            if (entry->type == type_double) ret_type = "double";
+            else if (entry->type == type_boolean) ret_type = "i1";
+            else if (entry->type == type_void) ret_type = "void";
+
+            if (strcmp(ret_type, "void") == 0) {
+                printf("  call void @%s(i32 %%5)\n  ret i32 0\n}\n", main_mangled);
+            } else if (strcmp(ret_type, "double") == 0) {
+                printf("  %%6 = call double @%s(i32 %%5)\n  %%7 = fptosi double %%6 to i32\n  ret i32 %%7\n}\n", main_mangled);
+            } else {
+                printf("  %%6 = call %s @%s(i32 %%5)\n  ret i32 %%6\n}\n", ret_type, main_mangled);
+            }
         }
     }
 }

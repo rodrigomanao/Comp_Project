@@ -415,16 +415,19 @@ enum type check_expression(struct symbol_table *local_table, struct node *expr) 
         case Eq: case Ne:
             t1 = check_expression(local_table, get_child(expr, 0));
             t2 = check_expression(local_table, get_child(expr, 1));
-            
-            expr->anot_string = strdup("boolean");
-            
-            // Aceitam comparar dois numéricos OU dois booleanos
-            if (!((t1 == type_boolean && t2 == type_boolean) || 
-                  ((t1 == type_int || t1 == type_double) && (t2 == type_int || t2 == type_double)))) {
-                printf("Line %d, col %d: Operator %s cannot be applied to types %s, %s\n", 
-                       expr->line, expr->col, get_op_sym(expr->category), type_to_string(t1), type_to_string(t2));
+
+            if ((t1 == type_boolean && t2 == type_boolean) ||
+                (t1 == type_int && t2 == type_int) ||
+                (t1 == type_double && t2 == type_double) ||
+                ((t1 == type_int || t1 == type_double) && (t2 == type_int || t2 == type_double))) {
+                expr->anot_string = strdup("boolean");
+                return type_boolean;
             }
-            return type_boolean;
+
+            printf("Line %d, col %d: Operator %s cannot be applied to types %s, %s\n", 
+                   expr->line, expr->col, get_op_sym(expr->category), type_to_string(t1), type_to_string(t2));
+            expr->anot_string = strdup("undef");
+            return type_undef;
 
 
         /* ---------------------------------------------------------
@@ -476,7 +479,7 @@ enum type check_expression(struct symbol_table *local_table, struct node *expr) 
         /* ---------------------------------------------------------
          * 7. BITWISE (Ignorados na Análise Semântica do Juc)
          * --------------------------------------------------------- */
-        case Lshift: case Rshift: case Xor:
+        case Lshift: case Rshift:
             t1 = check_expression(local_table, get_child(expr, 0));
             t2 = check_expression(local_table, get_child(expr, 1));
             
@@ -487,6 +490,25 @@ enum type check_expression(struct symbol_table *local_table, struct node *expr) 
             
             expr->anot_string = strdup("int");
             return type_int;
+
+        case Xor:
+            t1 = check_expression(local_table, get_child(expr, 0));
+            t2 = check_expression(local_table, get_child(expr, 1));
+
+            if (t1 == type_boolean && t2 == type_boolean) {
+                expr->anot_string = strdup("boolean");
+                return type_boolean;
+            }
+
+            if (t1 == type_int && t2 == type_int) {
+                expr->anot_string = strdup("int");
+                return type_int;
+            }
+
+            printf("Line %d, col %d: Operator %s cannot be applied to types %s, %s\n", 
+                   expr->line, expr->col, get_op_sym(expr->category), type_to_string(t1), type_to_string(t2));
+            expr->anot_string = strdup("undef");
+            return type_undef;
 
 
         /* ---------------------------------------------------------

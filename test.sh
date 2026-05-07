@@ -35,14 +35,35 @@ run_meta_tests() {
       if [[ "$meta_num" -eq 4 ]]; then
         tmp_ll=${inp%.java}.ll
         in_file=${inp%.java}.in
+        lli_cmd="$(command -v lli)"
+        if [[ -z "$lli_cmd" && -x "/opt/homebrew/opt/llvm/bin/lli" ]]; then
+          lli_cmd="/opt/homebrew/opt/llvm/bin/lli"
+        fi
+        if [[ -z "$lli_cmd" ]]; then
+          echo "  $inp: lli not found (install llvm or add to PATH)" && continue
+        fi
         
         if $exe $current_flag <"$inp" >"$tmp_ll" 2>/dev/null; then
           if ! grep -q "define.*@main" "$tmp_ll"; then
             touch "$tmp"
           else
             args=""
-            [[ -f "$in_file" ]] && args=$(cat "$in_file")
-            lli "$tmp_ll" $args >"$tmp" 2>/dev/null
+            if [[ -f "$in_file" ]]; then
+              args=$(cat "$in_file")
+            else
+              case "$inp" in
+                *MultipleParametersCommandLine.java) args="1 2" ;;
+                *fluxControl1.java) args="15" ;;
+                *fluxControl2.java) args="30" ;;
+                *fluxControl3.java) args="30" ;;
+                *length.java) args="1 3" ;;
+                *Overload.java) args="" ;;
+                *complex.java) args="" ;;
+                *randomTest.java) args="7" ;;
+                *strings_tests.java) args="1 2 3 4 5" ;;
+              esac
+            fi
+            "$lli_cmd" "$tmp_ll" $args >"$tmp" 2>/dev/null
           fi
         else
           echo "  $inp: Compilation Error" && continue
