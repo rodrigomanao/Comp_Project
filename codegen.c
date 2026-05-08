@@ -1,3 +1,8 @@
+/*
+ * COMP Project
+ * Authors: David Pedrosa 2021275573, Rodrigo Manão 2023207589
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
